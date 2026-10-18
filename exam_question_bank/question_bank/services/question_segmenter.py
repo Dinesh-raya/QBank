@@ -302,9 +302,11 @@ class QuestionSegmenter:
                              + [l.text() for _, l in acc.preamble])
             is_math = looks_arithmetic(probe)
 
-        stem_text = " ".join(stem_parts).strip()
+        from .typography import format_stem_typography
+        raw_stem = " ".join(stem_parts).strip()
         if preamble_text:
-            stem_text = (preamble_text + " " + stem_text).strip()
+            raw_stem = (preamble_text + " " + raw_stem).strip()
+        stem_text = format_stem_typography(raw_stem)
 
         quality: list[str] = []
         asset = None

@@ -357,6 +357,14 @@ class Repository:
         d["classifications"] = [dict(r) for r in self.db.query(
             "SELECT * FROM question_classifications WHERE question_id=? ORDER BY is_primary DESC, id",
             (question_id,))]
+        if d["classifications"]:
+            d["subject"] = d["classifications"][0].get("subject")
+            d["primary_topic"] = d["classifications"][0].get("topic")
+            d["subtopic"] = d["classifications"][0].get("subtopic")
+        else:
+            d["subject"] = None
+            d["primary_topic"] = None
+            d["subtopic"] = None
         d["tags"] = [r["tag"] for r in self.db.query(
             "SELECT tag FROM question_tags WHERE question_id=? ORDER BY tag", (question_id,))]
         d["context"] = self.get_context(d["context_id"]) if d["context_id"] else None
@@ -381,6 +389,7 @@ class Repository:
         self.db.connect().commit()
 
     def update_question(self, question_id: int, *, text: Optional[str] = None,
+                        stem_text: Optional[str] = None,
                         question_number: Optional[int] = None,
                         review_status: Optional[str] = None,
                         needs_review: Optional[bool] = None,
@@ -389,14 +398,19 @@ class Repository:
                         explanation: Optional[str] = None,
                         context_id: Optional[int] = None,
                         section_id: Optional[int] = None,
-                        is_excluded: Optional[bool] = None) -> None:
+                        is_excluded: Optional[bool] = None,
+                        subject: Optional[str] = None,
+                        primary_topic: Optional[str] = None) -> None:
         current = self.db.query_one("SELECT * FROM questions WHERE id=?", (question_id,))
         if not current:
             return
         fields: list[str] = []
         params: list[Any] = []
+        effective_text = text if text is not None else stem_text
+        effective_stem = stem_text if stem_text is not None else text
         for col, val in (
-            ("text", text), ("question_number", question_number),
+            ("text", effective_text), ("stem_text", effective_stem),
+            ("question_number", question_number),
             ("review_status", config.REVIEW_STATUS_EXCLUDED if is_excluded else review_status),
             ("correct_answer", correct_answer), ("explanation", explanation),
             ("context_id", context_id), ("section_id", section_id),
@@ -409,13 +423,14 @@ class Repository:
             fields.append("answer_verified=?"); params.append(1 if answer_verified else 0)
         if is_excluded:
             fields.append("needs_review=0")
-        if not fields:
-            return
-        fields.append("updated_at=?")
-        params.append(_now())
-        params.append(question_id)
-        self.db.execute(f"UPDATE questions SET {', '.join(fields)} WHERE id=?", tuple(params))
-        self.db.connect().commit()
+        if fields:
+            fields.append("updated_at=?")
+            params.append(_now())
+            params.append(question_id)
+            self.db.execute(f"UPDATE questions SET {', '.join(fields)} WHERE id=?", tuple(params))
+            self.db.connect().commit()
+        if subject and primary_topic:
+            self.set_classification(question_id, subject, primary_topic)
         if text is not None:
             self.log_review("question", question_id, "edit_text", current["text"], text)
         if review_status is not None or is_excluded:

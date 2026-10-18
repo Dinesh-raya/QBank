@@ -59,7 +59,9 @@ with tab_editor:
                 with st.form(f"edit_q_{q['id']}"):
                     st.caption(f"Question ID: `{q['id']}` · Document Page: {q.get('page_number')}")
                     
-                    stem = st.text_area("Question Stem Text", q["stem_text"], height=140)
+                    from question_bank.services.typography import format_stem_typography
+                    formatted_stem = format_stem_typography(q.get("stem_text") or "")
+                    stem = st.text_area("Question Stem Text", formatted_stem, height=180, key=f"stem_{q['id']}")
                     
                     # Editable Options
                     opts = q.get("options") or []
@@ -74,23 +76,23 @@ with tab_editor:
                     subjects = tax.subjects()
                     cur_subj = q.get("subject") or (subjects[0] if subjects else "")
                     s_idx = subjects.index(cur_subj) if cur_subj in subjects else 0
-                    chosen_subj = c_subj.selectbox("Subject", subjects, index=s_idx)
+                    chosen_subj = c_subj.selectbox("Subject", subjects, index=s_idx, key=f"subj_{q['id']}")
                     
                     avail_topics = tax.topics(chosen_subj) if chosen_subj else []
                     cur_top = q.get("primary_topic") or (avail_topics[0] if avail_topics else "")
                     t_idx = avail_topics.index(cur_top) if cur_top in avail_topics else 0
-                    chosen_top = c_top.selectbox("Topic", avail_topics, index=t_idx)
+                    chosen_top = c_top.selectbox("Topic", avail_topics, index=t_idx, key=f"top_{q['id']}")
                     
                     c_save, c_flag = st.columns(2)
                     save_clicked = c_save.form_submit_button("💾 Save Changes", type="primary")
                     flag_clicked = c_flag.form_submit_button("🚩 Toggle Needs Review")
                     
                     if save_clicked:
-                        repo.update_question(q["id"], stem_text=stem, subject=chosen_subj,
+                        repo.update_question(q["id"], stem_text=stem, text=stem, subject=chosen_subj,
                                              primary_topic=chosen_top, review_status="human_verified")
                         for o in new_opts:
                             repo.update_option(o["id"], text=o["text"])
-                        st.success("Changes saved successfully!")
+                        st.success("✅ Changes and classification saved successfully!")
                         st.rerun()
                     if flag_clicked:
                         new_st = "human_verified" if q["review_status"] == "needs_review" else "needs_review"

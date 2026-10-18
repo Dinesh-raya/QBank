@@ -112,6 +112,9 @@ def build_export_data(repo: Repository, include_pages: bool = True) -> dict[str,
         q_crop_b64 = file_to_b64(q.get("asset_path"))
         page_num   = q.get("page_number") or 1
 
+        from question_bank.services.typography import format_stem_typography
+        stem_formatted = format_stem_typography(q.get("stem_text") or q.get("text") or "")
+
         q_item = {
             "id":                q["id"],
             "number":            q.get("question_number"),
@@ -123,7 +126,7 @@ def build_export_data(repo: Repository, include_pages: bool = True) -> dict[str,
             "topic":             top,
             "subtopic":          subt,
             "tags":              q.get("tags") or [],
-            "stem":              q.get("text") or "",
+            "stem":              stem_formatted,
             "is_math":           bool(q.get("is_math")),
             "math":              q.get("math"),
             "crop_b64":          q_crop_b64,
