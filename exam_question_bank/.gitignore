@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# Local data, uploads, page renders, exports and the SQLite database.
+# These are user data / copyrighted exam papers and must never be committed.
+# ---------------------------------------------------------------------------
+/data/
+*.db
+*.db-wal
+*.db-shm
+/data_backups/
+
+# ---------------------------------------------------------------------------
+# Reference / copyrighted exam papers used as local test fixtures.
+# Tests skip gracefully when the fixture is absent (see tests/conftest.py).
+# ---------------------------------------------------------------------------
+/tests/fixtures/*.pdf
+/tests/fixtures/*.png
+/tests/fixtures/*.jpg
+/tests/fixtures/*.jpeg
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+desktop.ini

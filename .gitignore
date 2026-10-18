@@ -1,0 +1,58 @@
+# Root .gitignore for QBank
+
+# ---------------------------------------------------------------------------
+# Copyrighted reference PDFs and binary installers (NEVER commit)
+# ---------------------------------------------------------------------------
+Model Test 13.pdf
+*.pdf
+*.exe
+*.zip
+
+# ---------------------------------------------------------------------------
+# Local data, uploads, page renders, exports, and SQLite databases
+# ---------------------------------------------------------------------------
+data/
+**/data/
+*.db
+*.db-wal
+*.db-shm
+data_backups/
+**/data_backups/
+
+# ---------------------------------------------------------------------------
+# Reference / test fixtures
+# ---------------------------------------------------------------------------
+tests/fixtures/*.pdf
+tests/fixtures/*.png
+tests/fixtures/*.jpg
+tests/fixtures/*.jpeg
+
+# ---------------------------------------------------------------------------
+# Python caches, virtual environments & build artifacts
+# ---------------------------------------------------------------------------
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# Operating System & IDE artifacts
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+desktop.ini
+*.log

@@ -1,0 +1,892 @@
+# PROJECT MASTER PROMPT — EXAM PAPER DIGITIZER, TOPIC CLASSIFIER & QUESTION BANK
+
+## 1. Your role
+
+Act as a senior Python developer, PDF-processing engineer, OCR specialist, document-layout analyst, AI classification engineer, database architect, UI/UX designer, and software tester.
+
+Build a complete, functional application that accepts competitive-exam question papers as PDFs or images, extracts individual questions, identifies their subjects and topics, preserves related passages and diagrams, imports answer keys where available, and saves everything in a searchable, persistent question bank.
+
+This is an implementation assignment, not a request for a proposal.
+
+Inspect the available workspace, create the real project files, implement the application, run the available tests, fix defects, and deliver the complete source code and documentation.
+
+Do not stop after generating an architecture, a roadmap, a mockup, or code snippets. Do not claim that something works or has been tested unless you have verified it.
+
+Make sensible decisions independently. Ask for clarification only when a missing detail genuinely prevents implementation.
+
+## 2. Actual reference document
+
+The supplied reference file is `Model Test 13.pdf`.
+
+Inspect this document before finalizing extraction and segmentation rules. Use its actual layout as the first benchmark for the application.
+
+### Observed characteristics
+
+The document is an eight-page IBPS RRB Clerk Prelims model test.
+
+- Pages 1–4 contain Reasoning questions 1–40.
+- Pages 5–8 contain Numerical Ability questions 41–80.
+- Each question generally has five numbered answer options.
+- Shared direction paragraphs introduce groups of questions.
+- Several question groups continue across page boundaries.
+- The document includes repeated page headers, page numbers, branding, a large diagonal watermark, and other decorative elements.
+- Some content is embedded in a visual structure, including a line graph, a data table, mixed character sequences, and mathematical expressions.
+- An answer key appears at the end, presented as compact question-number/answer-option pairs.
+- The PDF has extractable text, but certain mathematical and visually arranged content requires validation against the rendered pages.
+
+Treat these observations as the initial profile, not hard-coded rules for every future paper.
+
+Do not assume all future papers are eight pages long, contain 80 questions, have five options, or use the same section names. Document length, question count, option count, section headings, answer-key format, and topic structure must be determined per document.
+
+Do not infer a publication year from an edition or test number unless the document explicitly supplies it.
+
+Keep the supplied PDF as a test fixture only if the user deliberately places it in the project’s test-data location. Do not commit private or copyrighted user documents to version control.
+
+## 3. Main purpose and user workflow
+
+The intended user is preparing for Indian bank and competitive examinations, particularly IBPS, SBI, RRB, Specialist Officer, LIC, and related examinations.
+
+The primary workflow is:
+
+1. Upload a question paper or answer-key document.
+2. Detect its page structure and determine appropriate text-extraction or OCR methods.
+3. Identify sections, shared instructions, individual questions, answer options, passages, puzzles, tables, graphs, and equations.
+4. Suggest subject, topic, and subtopic classifications.
+5. Extract an answer key when one is present.
+6. Review uncertain or malformed content against the original document.
+7. Confirm and save the questions in a persistent local database.
+8. Browse, search, filter, edit, export, and back up the resulting question bank.
+
+The central goal is faithful digitization and accurate organization. Automatic question solving is not the first priority.
+
+## 4. Technical architecture
+
+Use:
+
+- Python.
+- Streamlit for the local user interface.
+- SQLite for the question bank and metadata.
+- PyMuPDF for PDF text extraction, page metadata, and text-coordinate information where available.
+- Tesseract OCR for scanned PDFs and images.
+- Pillow for image processing.
+- pytest for automated testing.
+
+Design the extraction pipeline so OCR and classification components can be replaced independently.
+
+An optional local AI classifier may use Ollama or another locally available model service. Keep AI optional and configurable.
+
+If the AI model is unavailable, the application must still launch and support extraction, manual topic assignment, editing, storage, search, and export.
+
+Do not silently send documents or extracted questions to cloud services.
+
+### Environment constraints
+
+The target environment is Windows 11 on a laptop with about 8 GB RAM and an NVIDIA RTX 3050 4 GB GPU.
+
+Do not require GPU processing. Provide a CPU-compatible fallback and avoid loading multiple large models simultaneously.
+
+Use page-by-page or small-batch processing for large documents.
+
+Keep the product free to operate without paid APIs, user accounts, cloud hosting, telemetry, analytics, or internet-dependent runtime services. Explain that installing dependencies and downloading an optional local model may initially require internet access.
+
+Do not use a separate backend or database server for the initial application.
+
+## 5. Document inspection and page analysis
+
+Before extracting individual questions, inspect the document.
+
+Determine, where possible:
+
+- Number of pages.
+- Page dimensions and rotation.
+- Available selectable text.
+- Pages likely to contain scanned content.
+- Page layout and column structure.
+- Repeated headers and footers.
+- Section headings and direction paragraphs.
+- Likely question-number ranges.
+- Presence of tables, charts, formulas, diagrams, and answer keys.
+
+Process mixed PDFs at the page level. One document may contain both text-based pages and scanned pages.
+
+Do not assume that nonempty extracted text means a page has been extracted correctly.
+
+Track useful quality indicators, including suspicious characters, missing text, text density, OCR confidence where available, and inconsistencies in question numbering.
+
+### Headers, footers, watermarks, and logos
+
+The reference PDF includes repeated branding and a diagonal watermark. Similar documents may contain logos, barcodes, QR codes, page numbers, and running headers.
+
+Prevent decorative content and watermark artifacts from being included in question statements.
+
+Use repeated-position text detection, page-region analysis, and cautious cleanup rules where appropriate.
+
+Do not globally delete a phrase simply because it appears several times. It might be a legitimate instruction or part of multiple questions.
+
+Retain raw page extraction separately from cleaned page text so a user can investigate any cleanup error.
+
+## 6. Extraction pipeline
+
+Implement each stage as a separate testable service:
+
+1. Document ingestion.
+2. Page inspection.
+3. Direct PDF extraction or OCR.
+4. Structural and layout analysis.
+5. Question and shared-context segmentation.
+6. Option extraction.
+7. Diagram, chart, table, and formula preservation.
+8. Answer-key extraction.
+9. Topic classification.
+10. Human review.
+11. Database persistence.
+12. Search and export.
+
+Failures must be visible and recoverable.
+
+Do not pass unreviewed extracted text into the permanent database as if it were verified content. Unreviewed records may be saved as drafts, provided their review status is explicit.
+
+## 7. Question segmentation: highest-priority requirement
+
+Identify individual questions and separate them from section headings, general instructions, shared passages, puzzles, tables, graphs, and unrelated page content.
+
+Do not rely exclusively on regular expressions or the assumption that every question starts at the beginning of a new line.
+
+Use document structure, question numbering, layout coordinates, option patterns, direction headings, contextual relationships, and manual review.
+
+### Question records
+
+Each question should have:
+
+- A stable question ID.
+- Original question number, when identifiable.
+- Question text.
+- Answer options as structured records.
+- Primary subject, topic, and subtopic.
+- Optional secondary tags.
+- Source document ID.
+- Original page number.
+- Original source coordinates or page-image reference when available.
+- Parent shared-context ID when applicable.
+- Raw extracted text and corrected text stored separately.
+- Optional correct answer.
+- Optional explanation.
+- Extraction method and quality indicators.
+- Classification method and review status.
+- Creation and modification timestamps.
+
+The source page and original question number must be preserved even after manual corrections.
+
+### Recognize common structures
+
+Support:
+
+- Standalone multiple-choice questions.
+- Questions with varying numbers of options.
+- Non-MCQ questions.
+- Questions that continue across pages.
+- Shared instructions followed by multiple questions.
+- Shared puzzle or arrangement descriptions.
+- Reading passages followed by multiple questions.
+- Tables and graphs referenced by several questions.
+- Questions containing formulas, unusual symbols, or inline expressions.
+- Answer options printed in a single line or across multiple lines.
+
+Do not assume that all answer options use identical formatting or that a question group ends at a page break.
+
+## 8. Shared passages, instructions, and puzzle groups
+
+This is critical for reasoning questions.
+
+In the reference paper, one statement or clue set supports multiple questions. The application must recognize the relationship rather than treating the full shared text as an ordinary part of the first question.
+
+Represent shared material as a separate context record with links to the associated questions.
+
+Supported context types should include:
+
+- General instructions.
+- Logical statements and conclusions.
+- Seating arrangements.
+- Floor puzzles.
+- Scheduling and ordering puzzles.
+- Height or ranking problems.
+- Coding-language examples.
+- Mixed letter-number-symbol sequences.
+- Reading passages.
+- Data Interpretation charts and tables.
+- Other shared stimuli.
+
+Each linked question must remain independently searchable and classifiable.
+
+Opening a question should display both its own text and the shared context it depends on.
+
+The user must be able to attach or detach a question from a context and correct group boundaries.
+
+For example, a group of six questions linked to one data table must retain one source table and six linked question records. It must not silently duplicate, truncate, or lose the table when a question is edited.
+
+## 9. Special handling for the reference paper
+
+Implement the following as explicit regression tests and design considerations.
+
+These requirements are based on the supplied example; they must not become assumptions about all future PDFs.
+
+### A. Section boundaries
+
+The reference has a Reasoning section containing questions 1–40 and a Numerical Ability section containing questions 41–80.
+
+Detect section headings and associate questions with their actual section. Allow section names and numbering to vary in other papers.
+
+Check for missing numbers, duplicate question numbers, unexpected resets, and questions that cross page boundaries.
+
+Do not automatically fabricate missing questions to complete an expected sequence.
+
+### B. Shared reasoning question sets
+
+The supplied paper has several multi-question groups.
+
+The implementation must be able to preserve, among others:
+
+- Questions 1–4: shared syllogism instructions.
+- Questions 5–9: exam-date and month scheduling clues.
+- Questions 10–14: a floor-arrangement puzzle.
+- Questions 15–18: comparison or inequality statements.
+- Questions 20–22: relative-height clues.
+- Questions 24–28: a mixed sequence of letters, numbers, and symbols.
+- Questions 30–34: an ordering puzzle about purchase occasions.
+- Questions 35–39: coded-language examples.
+- Questions 52–57: a shared line graph.
+- Questions 61–66: a shared data table.
+
+Do not infer that every question in a group has the same subtopic solely because it shares a stimulus. The topic must reflect what the individual question is testing.
+
+### C. Preserve character sequences exactly
+
+Questions based on letter, number, and symbol sequences must preserve:
+
+- Character identity.
+- Original left-to-right order.
+- Repeated characters.
+- Punctuation and operator symbols.
+- Spaces where their interpretation matters.
+- The actual operation described in the question.
+
+Do not normalize a sequence by sorting, removing repeated characters, changing case, or dropping unfamiliar symbols.
+
+Store the original sequence and support comparison with the source page.
+
+If the character sequence cannot be extracted reliably, flag it for review rather than silently correcting it.
+
+### D. Line graphs and Data Interpretation
+
+Questions 52–57 share a line graph showing student participation across schools A–E.
+
+Graph values may be presented visually, with labels and data points but no machine-readable underlying data table.
+
+The application must preserve the source graph and page reference, even when its values cannot be extracted reliably.
+
+Where possible, identify:
+
+- Graph type.
+- Axis labels.
+- Axis scale.
+- Category labels.
+- Data points.
+- Legend or series names.
+
+Never invent graph values or assume they align with round numbers just because the graph looks approximate.
+
+If graph values are manually transcribed, label them as user-verified. If values are machine-interpreted, label them as uncertain until verified.
+
+A graph may be stored as an image or source-page crop with structured data attached separately. The visual source must remain accessible.
+
+Every question that references the graph should link to the same graph context.
+
+### E. Tabular Data Interpretation
+
+Questions 61–66 use a shared table with shop names, months, and numerical values.
+
+Preserve the original table layout or a clear table representation.
+
+Where possible, store its structured rows, columns, labels, values, and source coordinates separately from the displayed image.
+
+Do not confuse a row heading with a column header, or allow OCR column-order errors to alter data.
+
+The user must be able to compare extracted values with the original table.
+
+### F. Mathematical expressions and notation
+
+Questions 68–80 contain expressions involving operations, powers, roots, fractions, decimals, and missing values.
+
+Treat formulas as structured content, not merely plain-language text.
+
+Preserve:
+
+- Mathematical operators.
+- Superscripts and exponents.
+- Square-root and other radical symbols.
+- Fraction numerators and denominators.
+- Parentheses and grouping.
+- Decimal values.
+- Missing-value symbols such as question marks.
+- Equality and inequality relationships.
+
+Where practical, represent formulas using a structured mathematical or display format, while retaining the raw text and original page image.
+
+LaTeX or MathML may be used for display if validated. Do not assume every formula can be converted perfectly to LaTeX.
+
+If a symbol or fraction layout is uncertain, display the original formula image beside the extracted representation for correction.
+
+Never silently interpret a malformed formula and claim that the original question contained that interpretation.
+
+## 10. Topic taxonomy and classification
+
+Create an editable hierarchy:
+
+**Subject → Topic → Subtopic**
+
+Initialize it with a practical bank-exam taxonomy.
+
+### Reasoning Ability
+
+Include:
+
+- Syllogism.
+- Seating Arrangement.
+- Linear Arrangement.
+- Circular Arrangement.
+- Floor Puzzle.
+- Scheduling and Ordering Puzzles.
+- Ranking and Height Arrangement.
+- Inequality.
+- Coding-Decoding.
+- Word Formation.
+- Letter Pair and Alphabetical Order.
+- Alphanumeric Series.
+- Symbol and Character Arrangement.
+- Digit and Number Operations.
+- Direction and Distance.
+- Blood Relations.
+- Order and Ranking.
+- Logical Reasoning.
+- Data Sufficiency.
+- Other Reasoning.
+
+### Quantitative Aptitude
+
+Include:
+
+- Number Series.
+- Wrong Number Series.
+- Missing Number.
+- Simplification.
+- Approximation.
+- BODMAS and Operator Precedence.
+- Missing-Value Equations.
+- Percentage.
+- Ratio and Proportion.
+- Average.
+- Ages.
+- Profit and Loss.
+- Simple and Compound Interest.
+- Depreciation.
+- Mixtures and Alligation.
+- Time and Work.
+- Speed, Time and Distance.
+- Trains.
+- Boats and Streams.
+- Mensuration.
+- Partnership.
+- Probability.
+- Permutation and Combination.
+- Data Interpretation.
+- Data Sufficiency.
+- Other Arithmetic.
+
+### English Language
+
+Include:
+
+- Reading Comprehension.
+- Cloze Test.
+- Error Detection.
+- Sentence Improvement.
+- Fill in the Blanks.
+- Para Jumbles.
+- Vocabulary.
+- Synonyms and Antonyms.
+- Idioms and Phrases.
+- Grammar.
+- Other English.
+
+### General and Banking Awareness
+
+Include:
+
+- Banking Awareness.
+- Financial Awareness.
+- RBI and Monetary Policy.
+- Government Schemes.
+- Ministries.
+- Appointments.
+- Awards.
+- Important Days.
+- International Organizations.
+- Reports and Indices.
+- Economy and Budget.
+- Current Affairs.
+- Static GK.
+
+### Computer Awareness
+
+Include:
+
+- Computer Fundamentals.
+- Hardware and Software.
+- Operating Systems.
+- Networking.
+- Databases.
+- Internet and Email.
+- Cybersecurity.
+- Office Applications.
+- Other Computer Awareness.
+
+This is a starter taxonomy, not an exhaustive or official syllabus. Store it in editable configuration or database tables rather than hard-coding topic names in the UI.
+
+### Classification logic
+
+Use a layered approach:
+
+1. Transparent rules for obvious patterns.
+2. Optional local AI suggestions for ambiguous questions.
+3. Manual correction and confirmation.
+
+Pass the question text, relevant shared context, and allowed taxonomy to the classifier.
+
+Validate model responses against a strict schema and existing taxonomy.
+
+The classifier must return structured data rather than an arbitrary paragraph. It must never invent new topics by default.
+
+Store the classification method and review state.
+
+Support primary classifications, secondary tags, and uncertain classifications requiring review.
+
+Do not classify every question solely by its shared context. For example, questions based on a chart may test ratios, percentages, averages, or Data Interpretation. Use the individual question's task to determine its primary topic and use additional tags where appropriate.
+
+Provide keyword-based fallback suggestions when local AI is unavailable.
+
+Never fabricate a confidence percentage. Any confidence estimate should be clearly described as a heuristic unless validated empirically.
+
+## 11. Answer-key extraction
+
+The reference paper includes a compact answer key on its final page.
+
+Implement a separate answer-key extraction stage.
+
+Recognize common patterns such as:
+
+- Question number followed by an option number.
+- Question number followed by an answer letter.
+- Numbered answer lists.
+- Tabular answer-key layouts.
+- Separate answer-key PDFs when uploaded.
+
+For this particular reference paper, test whether the compact pairs can be parsed as question number and correct option number.
+
+Do not assume that every future key uses this format.
+
+For every extracted key entry, record:
+
+- Question number.
+- Extracted answer value or option index.
+- Source document and page.
+- Extraction method.
+- Match status.
+- Review status.
+
+Validate answer-key entries against the actual set of extracted questions and options.
+
+Detect missing entries, duplicate entries, out-of-range question numbers, invalid option indices, and ambiguous matches.
+
+A missing answer must remain missing. Never infer the correct answer just because one is expected.
+
+Display the answer key during review so the user can correct incorrect mappings.
+
+Do not generate explanations or solve the questions automatically in the first release.
+
+## 12. Database design
+
+Use SQLite with a normalized schema and a dedicated database-access layer.
+
+Implement tables or equivalent relations for:
+
+- Documents.
+- Pages.
+- Sections.
+- Shared contexts or stimulus groups.
+- Questions.
+- Answer options.
+- Taxonomy entries.
+- Question classifications and secondary tags.
+- Answer-key entries.
+- Review history.
+- Processing jobs or page-level processing status, where needed.
+
+Use stable IDs and foreign-key relationships.
+
+Important requirements:
+
+- A question can belong to one source document and page.
+- A question can link to a shared context.
+- A context can be linked to multiple questions.
+- Options retain their intended order.
+- The correct answer can be absent.
+- A question can have multiple tags.
+- Raw extraction and corrected content are stored separately.
+- Processing and review status are explicit.
+- Answer-key provenance is retained.
+- Source pages and original documents can be retrieved.
+
+Use parameterized SQL, transactions, indexes, schema migrations, and error handling.
+
+Do not store the entire question bank as one large JSON value.
+
+Do not delete an original question just because it may be a duplicate.
+
+## 13. Duplicate detection
+
+Detect potential duplicates using:
+
+- Source-document hashes.
+- Normalized question text.
+- Optional similarity matching when justified.
+
+Do not merge or delete questions automatically.
+
+Two questions with similar wording may use different numbers, options, passages, or charts.
+
+Allow the user to review likely duplicates and mark them as identical, related, or distinct.
+
+Repeated questions from separate papers should retain their separate source references even when their content is identical.
+
+## 14. Required interface
+
+Build a clean local Streamlit application with these sections.
+
+### Dashboard
+
+Show genuine metrics from the database:
+
+- Imported documents.
+- Pages processed.
+- Extracted questions.
+- Questions needing review.
+- Confirmed questions.
+- Missing or unverified answers.
+- Classification breakdown by subject.
+
+Do not show fake example statistics once real data is available.
+
+### Document Import
+
+Allow multiple PDF and image uploads.
+
+Display file name, page count, format, file hash when useful, processing status, extraction warnings, and errors.
+
+Support retries without unnecessarily reprocessing completed pages.
+
+### Document and Page Review
+
+Display the selected source page or an adequate preview.
+
+Show raw extracted text separately from cleaned text and extracted questions.
+
+Where possible, let the user compare the original page with the extracted content.
+
+### Question Segmentation Review
+
+Provide controls to:
+
+- Edit question text.
+- Edit options.
+- Correct question numbers.
+- Split combined records.
+- Merge fragments.
+- Create a question manually.
+- Exclude a record that is not a question.
+- Link or unlink shared context.
+- Confirm or flag the result.
+
+### Question Bank
+
+Support full-text search and filters by:
+
+- Subject.
+- Topic.
+- Subtopic.
+- Exam.
+- Year, if explicitly available.
+- Source document.
+- Section.
+- Review status.
+- Missing answer.
+- Duplicate candidate.
+
+### Question Detail
+
+Display the question, all options, linked shared context, correct answer if verified, source page, classification status, and editing history where available.
+
+Provide a way to reopen the source page.
+
+### Answer-Key Review
+
+Allow the user to validate extracted answers, identify unmatched entries, and manually correct mappings.
+
+### Taxonomy Management
+
+Allow subjects, topics, and subtopics to be added, renamed, deactivated, and reorganized.
+
+Prevent invalid parent-child relationships.
+
+### Export and Backup
+
+Provide JSON and CSV exports.
+
+JSON should preserve structured questions, ordered options, shared contexts, classifications, answer-key provenance, and source metadata where practical.
+
+CSV should be convenient for spreadsheet use and include question text, options, classification, source, page, answer, and verification status.
+
+Provide a backup and restoration process for the database and associated files. CSV alone must not be presented as a complete backup.
+
+## 15. Privacy, data integrity, and recovery
+
+The database must persist between application restarts.
+
+Keep documents, page images, database records, and exports in documented local directories.
+
+Provide appropriate `.gitignore` rules.
+
+Do not overwrite original uploaded documents when cleaning or OCR-processing them.
+
+Prevent duplicate inserts during Streamlit reruns.
+
+Handle file errors, corrupt pages, interrupted jobs, invalid model output, and database errors gracefully.
+
+Completed page and question records must not disappear because a later page fails.
+
+Support safe recovery and retry.
+
+Do not silently discard uncertain questions or source pages.
+
+## 16. Suggested project structure
+
+Use a maintainable modular design such as:
+
+exam_question_bank/
+- app.py
+- pages/
+  - dashboard.py
+  - import_documents.py
+  - review_extraction.py
+  - question_bank.py
+  - answer_key_review.py
+  - taxonomy_manager.py
+  - settings.py
+  - export_backup.py
+- question_bank/
+  - config.py
+  - database.py
+  - models.py
+  - repositories.py
+  - taxonomy.py
+  - services/
+    - document_loader.py
+    - page_inspector.py
+    - pdf_extractor.py
+    - ocr_engine.py
+    - image_processor.py
+    - layout_analyzer.py
+    - question_segmenter.py
+    - option_extractor.py
+    - context_linker.py
+    - answer_key_extractor.py
+    - classifier.py
+    - local_model_adapter.py
+    - duplicate_detector.py
+    - export_service.py
+    - backup_service.py
+- config/
+  - default_taxonomy.json
+- tests/
+  - test_pdf_extraction.py
+  - test_question_segmentation.py
+  - test_shared_contexts.py
+  - test_math_preservation.py
+  - test_answer_key.py
+  - test_classification.py
+  - test_database.py
+  - test_exports.py
+- data/
+- requirements.txt
+- .gitignore
+- README.md
+
+Modify the structure if necessary, but do not create empty modules just to imitate a template.
+
+Core processing functions must be testable without running Streamlit.
+
+## 17. Testing against the supplied model paper
+
+Use `Model Test 13.pdf` as the first benchmark if it is accessible in the workspace.
+
+Do not assume its local path without checking. If it is unavailable to the coding environment, explain where the user should place it for testing.
+
+Inspect the PDF visually and extract its actual content.
+
+Create regression tests for the following:
+
+1. Recognizing the document's sections and page structure.
+2. Detecting the sequential questions and unusual numbering patterns.
+3. Preserving five options where five are present.
+4. Filtering repeated header, footer, and watermark noise without deleting question text.
+5. Linking multi-question shared instructions and puzzles.
+6. Preserving the symbol arrangement used in questions 24–28.
+7. Associating each question with its original page.
+8. Preserving the line graph used by questions 52–57 and its relationship to all six questions.
+9. Preserving the table used by questions 61–66 and its relationship to all six questions.
+10. Keeping the equations in questions 68–80 faithful to the source.
+11. Detecting and parsing the answer key on the final page.
+12. Matching key entries to the correct question and option.
+13. Identifying missing, duplicate, or suspicious records without fabricating replacements.
+
+Where the source paper shows a known structure, check that the extracted structure matches it. Do not force a successful count by combining or inventing records.
+
+A correct regression test may report that the current extractor failed to identify a question. It must not disguise the failure.
+
+Build synthetic PDFs and images when needed to test edge cases, but identify them as synthetic test data.
+
+## 18. Testing on other layouts
+
+The first PDF must guide the design, not restrict it.
+
+Also test, where possible:
+
+- A clean digital PDF with a different question count.
+- A scanned image-based PDF.
+- A two-column paper.
+- A paper containing a passage and multiple linked questions.
+- A document with a different number of answer options.
+- A paper with no answer key.
+- A standalone question image.
+- A paper with mathematical expressions or diagrams.
+
+Test files may be synthetic if real examples are unavailable.
+
+Document any input formats that were not tested.
+
+## 19. Metrics and quality reporting
+
+Measure quality on a manually verified sample instead of inventing accuracy percentages.
+
+Track:
+
+- Question detection rate.
+- Question-boundary accuracy.
+- Exact transcription rate.
+- Option-extraction accuracy.
+- Correct page-reference rate.
+- Topic and subtopic classification accuracy.
+- Answer-key matching accuracy.
+- Percentage of records requiring manual correction.
+- Processing time.
+- Resource usage where practical.
+
+Clearly distinguish extraction quality from classification quality.
+
+Do not call a question correct merely because it was detected. The wording, options, source mapping, and classification can fail independently.
+
+## 20. Installation and documentation
+
+Provide a complete README with:
+
+- Project overview.
+- Tested Python version.
+- Dependency installation.
+- Windows PowerShell commands.
+- Virtual-environment setup.
+- Tesseract installation and path configuration.
+- Application launch commands.
+- Optional local AI setup.
+- How to import and review a paper.
+- Data and database locations.
+- Backup and restoration procedures.
+- Export formats.
+- Automated test commands.
+- Troubleshooting.
+- Current limitations.
+
+The standard launch workflow should be documented around `streamlit run app.py`, and tests around `pytest`, adjusted to the actual project.
+
+Do not make optional AI packages mandatory unless actually required by the core application.
+
+## 21. Development order
+
+Implement in this order:
+
+**Phase 1:** Inspect the reference PDF and build the database, digital PDF extraction, page references, and basic question segmentation.
+
+**Phase 2:** Build the segmentation-review interface, question editor, shared-context relationships, and persistent question bank.
+
+**Phase 3:** Add OCR and image/page previews, with error handling and quality warnings.
+
+**Phase 4:** Add topic taxonomy, rule-based classification, and optional local AI classification.
+
+**Phase 5:** Add answer-key extraction and verification.
+
+**Phase 6:** Improve graph, table, formula, and symbol preservation.
+
+**Phase 7:** Add complete search, filtering, export, backup, and restoration workflows.
+
+**Phase 8:** Execute tests, evaluate the reference paper, fix failures, and document the results.
+
+Test each phase before expanding it.
+
+Do not implement answer solving, a mock-test engine, cloud synchronization, user accounts, or other unrelated advanced features until the core digitization and question-bank workflow is reliable.
+
+## 22. Definition of done
+
+The first release is complete when:
+
+- The application launches locally.
+- The supplied reference PDF can be imported.
+- Digital text extraction works.
+- OCR is available for supported scanned files when configured.
+- Questions and their options are segmented into editable records.
+- Shared passages, puzzles, tables, and graphs can be linked to their questions.
+- Symbol-heavy questions and formulas can be checked against original pages.
+- Source document and page references persist.
+- Topic suggestions are available, and incorrect suggestions can be fixed.
+- A provided answer key can be reviewed and mapped to questions.
+- The question bank persists after restarting the application.
+- Search, editing, JSON export, and CSV export function.
+- Backup and restoration are documented and tested where possible.
+- Tests are executed and results reported honestly.
+- Known limitations are documented.
+
+## 23. Final delivery instructions
+
+Deliver the actual working project, including source code, configuration, tests, requirements, and documentation. Create a ZIP archive if file-generation tools are available.
+
+Provide the exact source and archive locations.
+
+Report:
+
+1. What was implemented.
+2. How to install and launch it.
+3. Which tests actually ran and their results.
+4. Which parts were not tested or were blocked by missing dependencies.
+5. Observed extraction or classification weaknesses on the reference PDF.
+6. Known limitations and the next justified improvements.
+
+Do not claim universal support for every PDF layout. Do not invent missing values, answers, topics, or successful test results.
+
+**Begin by inspecting the workspace and the supplied Model Test 13.pdf. Build and test a reliable end-to-end implementation, prioritizing faithful extraction, source traceability, shared-context preservation, topic classification, and human correction.**

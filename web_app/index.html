@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QBank · Encrypted Master Question Bank</title>
+  <meta name="description" content="Password-protected, AES-256 encrypted exam question bank with topic-wise filtering, practice mode, and source paper viewer.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+  <!-- KaTeX for math rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ======================================================================= -->
+  <!-- LOCK SCREEN                                                              -->
+  <!-- ======================================================================= -->
+  <div id="lockScreen" class="lock-screen-container">
+    <div class="lock-card">
+      <div class="lock-logo">
+        <div class="lock-icon-ring">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="11" width="18" height="11" rx="3" ry="3"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+      </div>
+      <h1 class="lock-title">QBank</h1>
+      <p class="lock-tagline">Encrypted Master Question Bank</p>
+      <p class="lock-subtitle">This vault is protected with AES‑256‑GCM encryption.<br>Enter your master passphrase to unlock.</p>
+
+      <form id="unlockForm" onsubmit="event.preventDefault(); unlockVault();">
+        <div class="input-group" id="passGroup">
+          <span class="input-icon">🔑</span>
+          <input type="password" id="masterPasswordInput" placeholder="Enter master passphrase…" autocomplete="current-password" required autofocus>
+          <button type="button" class="eye-btn" id="eyeBtn" onclick="togglePasswordVisibility()" title="Show/Hide">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+
+        <label class="remember-label">
+          <input type="checkbox" id="rememberMeCheckbox">
+          <span class="checkbox-custom"></span>
+          <span>Remember on this device (session storage)</span>
+        </label>
+
+        <button type="submit" id="unlockButton" class="btn-unlock">
+          <span class="btn-text">Unlock Vault</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </form>
+
+      <div id="lockError" class="lock-error hidden">
+        <span>⚠</span> Incorrect password or corrupt vault file.
+      </div>
+
+      <div class="lock-footer">
+        <span class="security-badge">🔒 AES-256-GCM · Zero Cloud · Client-Side Only</span>
+      </div>
+    </div>
+    <div class="lock-bg-decoration"></div>
+  </div>
+
+
+  <!-- ======================================================================= -->
+  <!-- MAIN APP                                                                 -->
+  <!-- ======================================================================= -->
+  <div id="appContainer" class="app-layout hidden">
+
+    <!-- TOP NAVIGATION -->
+    <header class="app-header">
+      <div class="header-left">
+        <button id="mobileMenuToggle" class="btn-icon mobile-only" onclick="toggleSidebar()" title="Topics">☰</button>
+        <div class="brand">
+          <span class="brand-icon">📚</span>
+          <span class="brand-title">QBank</span>
+          <span class="badge-encrypted">AES-256</span>
+        </div>
+      </div>
+
+      <div class="header-search">
+        <span class="search-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input type="text" id="searchInput" placeholder="Search questions, topics, formulas…" oninput="handleSearch()">
+        <button id="clearSearchBtn" class="clear-search hidden" onclick="clearSearch()">✕</button>
+      </div>
+
+      <div class="header-actions">
+        <div class="segmented-control" role="tablist">
+          <button id="modePracticeBtn" class="seg-btn active" onclick="setMode('practice')" role="tab" aria-selected="true">🎯 Practice</button>
+          <button id="modeFeedBtn" class="seg-btn" onclick="setMode('feed')" role="tab">📑 Browse</button>
+        </div>
+        <button class="btn-icon lock-btn" onclick="lockVault()" title="Lock & logout">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="main-body">
+
+      <!-- ==================================================================== -->
+      <!-- SIDEBAR: Topic Index                                                  -->
+      <!-- ==================================================================== -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-top">
+          <div class="sidebar-header">
+            <span class="sidebar-title">Topic Index</span>
+            <span id="totalQuestionsBadge" class="count-badge">0</span>
+          </div>
+
+          <div class="sidebar-all-item topic-item active" id="topic-all" onclick="selectTopic('all')">
+            <span class="topic-emoji">🌟</span>
+            <span class="topic-name">All Questions</span>
+            <span id="count-all" class="topic-count">0</span>
+          </div>
+        </div>
+
+        <div class="topic-scroll-container">
+          <div id="topicTree"></div>
+
+          <div class="sidebar-section-sep">
+            <span class="sidebar-section-label">Model Papers</span>
+          </div>
+          <div id="papersList"></div>
+        </div>
+      </aside>
+
+      <div id="sidebarBackdrop" class="sidebar-backdrop hidden" onclick="toggleSidebar()"></div>
+
+      <!-- ==================================================================== -->
+      <!-- CONTENT STAGE                                                         -->
+      <!-- ==================================================================== -->
+      <main class="content-stage" id="contentStage">
+
+        <!-- Filter status bar -->
+        <div class="filter-bar">
+          <div class="filter-bar-left">
+            <span id="activeTopicLabel" class="filter-title">All Questions</span>
+            <span id="filteredCountLabel" class="filter-count">(80 questions)</span>
+          </div>
+          <button id="resetFilterBtn" class="btn-reset hidden" onclick="selectTopic('all')">✕ Reset Filter</button>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- VIEW 1: PRACTICE MODE                                               -->
+        <!-- ================================================================== -->
+        <div id="practiceView" class="view-panel">
+
+          <!-- Navigator bar -->
+          <div class="practice-nav-bar">
+            <button id="prevQuestionBtn" class="btn-nav" onclick="prevQuestion()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              Prev
+            </button>
+            <div class="nav-center">
+              <span id="questionStepIndicator" class="nav-indicator">Question 1 of 80</span>
+            </div>
+            <button id="nextQuestionBtn" class="btn-nav right" onclick="nextQuestion()">
+              Next
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+
+          <!-- Quick jump pills -->
+          <div id="jumpPillRow" class="jump-pill-row"></div>
+
+          <!-- Three-column layout: Stimulus | Question | Source Paper -->
+          <div class="practice-grid" id="practiceGrid">
+
+            <!-- Left: Stimulus / Context pane -->
+            <div id="stimulusPane" class="panel stimulus-panel">
+              <div class="panel-header">
+                <span class="panel-icon">📌</span>
+                <span class="panel-title">Stimulus & Context</span>
+              </div>
+              <div id="stimulusEmptyState" class="panel-empty hidden">
+                <div class="empty-icon">📝</div>
+                <p>Standalone question<br><small>No shared stimulus required</small></p>
+              </div>
+              <div id="stimulusContent" class="stimulus-body">
+                <div id="stimulusLabel" class="stimulus-label"></div>
+                <div id="stimulusText" class="stimulus-text"></div>
+                <div id="stimulusSequence" class="stimulus-sequence hidden"></div>
+                <div id="stimulusImageWrapper" class="stimulus-img-box hidden">
+                  <img id="stimulusImage" src="" alt="Stimulus diagram or graph">
+                </div>
+              </div>
+              <!-- Formula crop preview -->
+              <div id="cropPreviewBox" class="crop-preview hidden">
+                <div class="crop-label">🔍 Original Formula Crop (from exam PDF)</div>
+                <img id="questionCropImg" src="" alt="Formula crop">
+              </div>
+            </div>
+
+            <!-- Center: Question & options -->
+            <div class="panel question-panel">
+              <div class="question-meta-chips" id="practiceMetaChips"></div>
+
+              <div class="question-stem-box">
+                <div id="practiceStemText" class="question-stem"></div>
+                <div id="practiceMathBox" class="math-block hidden">
+                  <div id="katexTarget"></div>
+                </div>
+              </div>
+
+              <div class="options-section">
+                <div class="options-label">Select the correct answer:</div>
+                <div id="practiceOptionsList" class="options-list"></div>
+              </div>
+
+              <div class="practice-actions">
+                <button id="checkAnswerBtn" class="btn-check" onclick="checkAnswer()">
+                  ✓ Check Answer
+                </button>
+                <button id="revealAnswerBtn" class="btn-reveal" onclick="toggleRevealAnswer()">
+                  👁 Reveal Key
+                </button>
+                <button id="randomQuestionBtn" class="btn-random" onclick="randomQuestion()">
+                  🎲
+                </button>
+              </div>
+
+              <div id="feedbackBanner" class="feedback-banner hidden"></div>
+
+              <div id="answerProvenanceDrawer" class="provenance-drawer hidden">
+                <div class="provenance-header">
+                  <span>📋 Official Answer Key</span>
+                </div>
+                <div id="provenanceContent" class="provenance-body"></div>
+              </div>
+            </div>
+
+            <!-- Right: Source Paper Viewer -->
+            <div class="panel source-panel" id="sourcePanel">
+              <div class="panel-header source-panel-header">
+                <div class="source-panel-tabs">
+                  <span class="panel-icon">📄</span>
+                  <span class="panel-title">Source Paper</span>
+                </div>
+                <div class="source-page-nav">
+                  <button class="btn-page-nav" id="sourcePrevPageBtn" onclick="sourcePageNav(-1)" title="Previous page">‹</button>
+                  <span id="sourcePageLabel" class="source-page-label">Page 1</span>
+                  <button class="btn-page-nav" id="sourceNextPageBtn" onclick="sourcePageNav(1)" title="Next page">›</button>
+                </div>
+              </div>
+              <div id="sourcePaperEmpty" class="panel-empty hidden">
+                <div class="empty-icon">🗂</div>
+                <p>Source paper not<br>available in vault</p>
+              </div>
+              <div id="sourcePaperViewer" class="source-paper-viewer">
+                <div class="source-paper-label" id="sourcePaperLabel"></div>
+                <div class="source-img-wrapper">
+                  <img id="sourcePaperImg" src="" alt="Source exam paper page" class="source-paper-img">
+                  <div id="sourceHighlight" class="source-highlight hidden"></div>
+                </div>
+                <div class="source-page-hint" id="sourcePageHint"></div>
+              </div>
+            </div>
+
+          </div><!-- /practice-grid -->
+        </div><!-- /practiceView -->
+
+
+        <!-- ================================================================== -->
+        <!-- VIEW 2: BROWSE / FEED MODE                                          -->
+        <!-- ================================================================== -->
+        <div id="feedView" class="view-panel hidden">
+          <div id="feedCardsList" class="feed-container"></div>
+        </div>
+
+      </main>
+    </div><!-- /main-body -->
+  </div><!-- /appContainer -->
+
+  <script src="app.js"></script>
+</body>
+</html>

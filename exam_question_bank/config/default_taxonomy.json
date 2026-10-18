@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "note": "Starter bank-exam taxonomy derived from the project brief. Editable at runtime via the Taxonomy Manager or by editing this file. Subject > Topic > Subtopic.",
+  "subjects": [
+    {
+      "name": "Reasoning Ability",
+      "topics": [
+        "Syllogism",
+        "Seating Arrangement",
+        "Linear Arrangement",
+        "Circular Arrangement",
+        "Floor Puzzle",
+        "Scheduling and Ordering Puzzles",
+        "Ranking and Height Arrangement",
+        "Inequality",
+        "Coding-Decoding",
+        "Word Formation",
+        "Letter Pair and Alphabetical Order",
+        "Alphanumeric Series",
+        "Symbol and Character Arrangement",
+        "Digit and Number Operations",
+        "Direction and Distance",
+        "Blood Relations",
+        "Order and Ranking",
+        "Logical Reasoning",
+        "Data Sufficiency",
+        "Other Reasoning"
+      ]
+    },
+    {
+      "name": "Quantitative Aptitude",
+      "topics": [
+        "Number Series",
+        "Wrong Number Series",
+        "Missing Number",
+        "Simplification",
+        "Approximation",
+        "BODMAS and Operator Precedence",
+        "Missing-Value Equations",
+        "Percentage",
+        "Ratio and Proportion",
+        "Average",
+        "Ages",
+        "Profit and Loss",
+        "Simple and Compound Interest",
+        "Depreciation",
+        "Mixtures and Alligation",
+        "Time and Work",
+        "Speed, Time and Distance",
+        "Trains",
+        "Boats and Streams",
+        "Mensuration",
+        "Partnership",
+        "Probability",
+        "Permutation and Combination",
+        "Data Interpretation",
+        "Data Sufficiency",
+        "Other Arithmetic"
+      ]
+    },
+    {
+      "name": "English Language",
+      "topics": [
+        "Reading Comprehension",
+        "Cloze Test",
+        "Error Detection",
+        "Sentence Improvement",
+        "Fill in the Blanks",
+        "Para Jumbles",
+        "Vocabulary",
+        "Synonyms and Antonyms",
+        "Idioms and Phrases",
+        "Grammar",
+        "Other English"
+      ]
+    },
+    {
+      "name": "General and Banking Awareness",
+      "topics": [
+        "Banking Awareness",
+        "Financial Awareness",
+        "RBI and Monetary Policy",
+        "Government Schemes",
+        "Ministries",
+        "Appointments",
+        "Awards",
+        "Important Days",
+        "International Organizations",
+        "Reports and Indices",
+        "Economy and Budget",
+        "Current Affairs",
+        "Static GK"
+      ]
+    },
+    {
+      "name": "Computer Awareness",
+      "topics": [
+        "Computer Fundamentals",
+        "Hardware and Software",
+        "Operating Systems",
+        "Networking",
+        "Databases",
+        "Internet and Email",
+        "Cybersecurity",
+        "Office Applications",
+        "Other Computer Awareness"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+# Core (required)
+pymupdf>=1.24.0
+Pillow>=10.0.0
+
+# UI (required for the Streamlit app)
+streamlit>=1.32.0
+pandas>=2.0.0
+
+# Testing (required to run the test suite)
+pytest>=8.0.0
+
+# Optional OCR (requires the Tesseract binary to be installed separately).
+# The application runs and all non-OCR features work without these installed.
+pytesseract>=0.3.10
+numpy>=1.26.0
+
+# Optional local AI classifier: no Python package is required. Point the app at
+# a running Ollama server (see README) to enable AI topic suggestions.
