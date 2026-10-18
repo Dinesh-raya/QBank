@@ -24,7 +24,8 @@ decisions, and open threads*.
 Env: Windows 11, Python 3.13.14 only. PyMuPDF 1.28.2, Pillow 12.2.0, Streamlit 1.58.0,
 pandas 3.0.3, numpy 2.5.0, pytest 9.1.1, pytesseract 0.3.13. Tesseract 5.5.3 installed at
 `C:\Program Files\Tesseract-OCR\tesseract.exe` (auto-detected; no env var needed).
-Not a git repo — nothing is committed anywhere.
+Git Repository: Connected and pushed to https://github.com/Dinesh-raya/QBank.git (branch: main).
+CI: GitHub Actions workflow `.github/workflows/pages.yml` configured for web_app GitHub Pages deployment.
 
 ---
 
