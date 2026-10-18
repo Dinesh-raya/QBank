@@ -24,7 +24,7 @@ let gSourcePage      = 1;      // currently viewed page number
 // =============================================================================
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    const res = await fetch("data.enc");
+    const res = await fetch("data.enc?t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     gEncryptedBlob = await res.json();
 
