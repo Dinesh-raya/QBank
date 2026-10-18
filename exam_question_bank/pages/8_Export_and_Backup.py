@@ -58,13 +58,28 @@ if do_export_vault:
             from scripts.export_encrypted_web import (build_export_data,
                                                       encrypt_payload)
             import json
+            import subprocess
             data = build_export_data(repo)
             encrypted = encrypt_payload(data, vault_pass.strip())
-            out_file = Path(__file__).resolve().parent.parent.parent / "web_app" / "data.enc"
+            repo_root = Path(__file__).resolve().parent.parent.parent
+            out_file = repo_root / "web_app" / "data.enc"
             out_file.parent.mkdir(parents=True, exist_ok=True)
             out_file.write_text(json.dumps(encrypted), encoding="utf-8")
-            st.success(f"Encrypted vault generated at: `{out_file}` ({out_file.stat().st_size / 1024:.1f} KB).")
-            st.info("You can now open `web_app/index.html` locally or push the `web_app` folder to your GitHub repository.")
+            st.success(f"✅ Encrypted vault generated at: `{out_file}` ({out_file.stat().st_size / 1024:.1f} KB).")
+
+            with st.spinner("Pushing updated vault to live GitHub Pages..."):
+                try:
+                    subprocess.run(["git", "add", "web_app/data.enc"], cwd=repo_root, check=True, capture_output=True)
+                    subprocess.run(["git", "commit", "-m", "update: deploy updated encrypted vault"], cwd=repo_root, capture_output=True)
+                    subprocess.run(["git", "push", "origin", "main"], cwd=repo_root, check=True, capture_output=True)
+                    # Sync to gh-pages branch
+                    subprocess.run(["git", "subtree", "split", "--prefix", "web_app", "-b", "gh-pages-sync"], cwd=repo_root, check=True, capture_output=True)
+                    subprocess.run(["git", "branch", "-D", "gh-pages"], cwd=repo_root, capture_output=True)
+                    subprocess.run(["git", "branch", "-m", "gh-pages-sync", "gh-pages"], cwd=repo_root, check=True, capture_output=True)
+                    subprocess.run(["git", "push", "-f", "origin", "gh-pages:gh-pages"], cwd=repo_root, check=True, capture_output=True)
+                    st.success("🚀 Successfully deployed to live site! Access at: https://dinesh-raya.github.io/QBank/")
+                except Exception as git_err:
+                    st.warning(f"Vault saved locally. To push online, run git push or check: {git_err}")
         except Exception as exc:
             st.error(f"Encryption failed: {exc}")
 st.subheader("Backup")
