@@ -56,3 +56,5 @@ Thumbs.db
 .DS_Store
 desktop.ini
 *.log
+.vault_key
+**/.vault_key

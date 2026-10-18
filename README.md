@@ -15,14 +15,12 @@ An offline-first, coordinate-driven document analysis and question bank digitize
    - Hierarchical rule-based taxonomy classifier.
    - Sub-topic tagging for Reasoning Ability, Quantitative Aptitude, and Data Interpretation.
 
-3. **Streamlit Multi-Page Studio (`exam_question_bank/`):**
-   - **Dashboard**: Corpus analytics and extraction health metrics.
-   - **Import**: Document ingestion pipeline with auto-OCR fallback.
-   - **Review Extraction**: Interactive per-page question inspector and classifier override.
-   - **Question Bank**: Split-screen study station with KaTeX mathematical rendering and stimulus drawer.
-   - **Answer Key Review**: Automatic key grid extraction and provenance verification.
-   - **Taxonomy Manager**: Hierarchical topic editor.
-   - **Export & Backup**: JSON, CSV, encrypted backup, and one-click Web Vault exporter.
+3. **Streamlit Ingestion & Publishing Studio (`exam_question_bank/`):**
+   - **Control Center (`app.py`)**: Pipeline health metrics, live web app status, and quick workflow links.
+   - **Step 1: Import Documents (`pages/1_Import_Documents.py`)**: PDF/scan ingestion with auto-OCR fallback and layout analysis.
+   - **Step 2: Review & Verify (`pages/2_Review_and_Verify.py`)**: Full-page inspection, question/option editor, stimulus crops, and answer key reconciliation.
+   - **Step 3: Publish to Web App (`pages/3_Publish_to_Web_App.py`)**: 1-click AES-256 vault encryption and direct GitHub Pages deployment, plus JSON/CSV exports and full ZIP backups.
+   - **Step 4: Settings & Taxonomy (`pages/4_Settings_and_Taxonomy.py`)**: Subject/topic hierarchy editor, Tesseract OCR diagnostics, and layout tuning.
 
 4. **Zero-Knowledge Encrypted Web Vault (`web_app/`):**
    - Standalone, zero-dependency browser portal.
