@@ -32,7 +32,8 @@ CI: GitHub Actions workflow `.github/workflows/pages.yml` configured for web_app
 ## Current verified state (all executed, not estimated)
 
 - `pytest` → **55 passed, 1 skipped** in the working dir.
-- Streamlit smoke test: all 9 scripts (`app.py` + `pages/1..8`) run with zero exceptions via `AppTest`.
+- Streamlit smoke test: all 5 scripts (`app.py` + `pages/1..4`) run with zero exceptions via `AppTest`.
+- Studio Architecture: Streamlined into focused 4-step Ingestion Studio (Import, Review & Verify, Publish to Web App, Settings & Taxonomy).
 - Reference result: 8 pages, 2 sections, 12 contexts, 80 questions (1-80, no gaps/dupes),
   400 options (5 each), 13 math (q68-80) all cropped, 80 answer keys all `matched`,
   2 graph/table regions, 0 warnings, classification Reasoning 40 / Quant 40, **0 unclassified**.
